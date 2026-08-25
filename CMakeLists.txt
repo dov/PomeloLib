@@ -18,6 +18,15 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   add_compile_options(-flarge-source-files)
 endif()
 
+# Put every executable (engine tools and, if enabled, the unit test
+# binary) in one place, rather than scattered across their per-target
+# subdirectories under the build tree. Guarded so that consuming
+# PomeloLib via add_subdirectory()/FetchContent doesn't redirect the
+# parent project's own executables into PomeloLib's build directory.
+if(PROJECT_IS_TOP_LEVEL)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(cmake/Version.cmake)
