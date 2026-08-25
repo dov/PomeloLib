@@ -24,3 +24,8 @@ include(cmake/Version.cmake)
 include(cmake/Dependencies.cmake)
 
 add_subdirectory(src)
+
+include(CTest)
+if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
+  add_subdirectory(tests)
+endif()

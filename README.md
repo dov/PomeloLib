@@ -31,3 +31,23 @@ pangomm-1.4, pangoft2, cairo, cairo-ft, harfbuzz, fribidi, glib-2.0,
 freetype2, CGAL (with GMP/MPFR). fmt, spdlog, glm, nlohmann_json, nanosvg
 and tinygltf are fetched automatically at configure time via
 `FetchContent`.
+
+## Testing
+
+```sh
+ctest --test-dir build --output-on-failure
+```
+
+- `unit_tests` — a [doctest](https://github.com/doctest/doctest) binary
+  covering the parts of the engine that don't need a real font or a
+  display: bezier/line intersection, colour parsing and material
+  JSON round-tripping, and profile node/layer/scale/(de)serialization.
+- `cli_*` — end to end smoke tests that run the actual built
+  executables (baking a font3d from the vendored test font, laying
+  text out with it, driving `pomelo-layout-server`'s stdin/stdout JSON
+  protocol, and running `pomelo-cli`), matching how a real consumer
+  calls them.
+
+Tests are only configured when PomeloLib is the top-level project, so
+consuming it via `add_subdirectory()` (or `FetchContent`) never pulls
+doctest or the test font in.
