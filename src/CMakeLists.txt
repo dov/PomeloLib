@@ -2,6 +2,7 @@ set(ENGINE_SOURCES
   textrusion.cc
   smooth-sharp-angles.cc
   svgpath-to-cairo.cc
+  svg-path-flatten.cc
   pango-to-cairo.cc
   profile.cc
   material.cc
@@ -96,6 +97,7 @@ set(POMELOLIB_PUBLIC_HEADERS
   textrusion.h
   smooth-sharp-angles.h
   svgpath-to-cairo.h
+  svg-path-flatten.h
   pango-to-cairo.h
   profile.h
   material.h

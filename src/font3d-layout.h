@@ -20,6 +20,7 @@
 #include <vector>
 #include <glm/vec2.hpp>
 #include "font3d.h"
+#include "svg-path-flatten.h"
 
 enum class TextDirection { Auto, LTR, RTL };
 enum class TextAlign { Start, Center, End };
@@ -82,5 +83,15 @@ class Font3DLayout {
   class Impl;
   std::unique_ptr<Impl> m_impl;
 };
+
+// Bend an already flat-laid-out run onto a path: each glyph's x becomes
+// an arc-length distance along the path, its y becomes an offset along
+// the path's local normal at that point (so harfbuzz y_offset and
+// multi-line baselines still act as "perpendicular from the line", the
+// way they do flat), and its angle is set to the path's local tangent.
+// normal_offset shifts the whole run, e.g. to sit text above or below
+// the path the way svg's dy does on a textPath.
+void bend_onto_path(std::vector<PlacedGlyph>& glyphs, const FlattenedPath& path,
+                    double normal_offset = 0);
 
 #endif /* FONT3D_LAYOUT */

@@ -95,6 +95,7 @@ class PlacedGlyph {
   public:
   uint32_t glyph_id = 0;
   glm::dvec3 pen {0,0,0};
+  double angle = 0;             // radians, ccw about +z; 0 is flat text
   int cluster = 0;              // byte offset into the source utf-8
   int line = 0;
 };
@@ -148,8 +149,15 @@ class Font3D {
   // Read back a font written by save_glb().
   static Font3D load_glb(const std::string& filename);
 
-  // Where a placed glyph's stored mesh has to be translated to.
+  // Where a placed glyph's stored mesh has to be translated to. Only
+  // correct when placed.angle is 0; use mesh_placement() otherwise.
   glm::dvec3 mesh_translation(const PlacedGlyph& placed) const;
+
+  // The rigid transform - rotate by placed.angle about z, then translate -
+  // that places a glyph's stored (centred) mesh in layout space. A stored
+  // vertex v is placed at rotate_z(angle, v) + translation.
+  struct GlyphPlacement { double angle = 0; glm::dvec3 translation {0,0,0}; };
+  GlyphPlacement mesh_placement(const PlacedGlyph& placed) const;
 
   // Write the font as a single binary glb. The default scene lays the
   // glyphs out in a grid so that the file previews as a specimen sheet;

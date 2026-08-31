@@ -126,6 +126,7 @@ static json layout_to_json(const LayoutResult& result)
     placements.push_back({
       {"glyph_id", p.glyph_id},
       {"pen", {p.pen.x, p.pen.y, p.pen.z}},
+      {"angle", p.angle},
       {"cluster", p.cluster},
       {"line", p.line},
     });

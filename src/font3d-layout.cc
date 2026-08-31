@@ -417,3 +417,19 @@ LayoutResult Font3DLayout::layout(const string& utf8,
 
   return result;
 }
+
+void bend_onto_path(vector<PlacedGlyph>& glyphs, const FlattenedPath& path,
+                    double normal_offset)
+{
+  for (PlacedGlyph& g : glyphs)
+  {
+    FlattenedPath::PointTangent pt = path.at(g.pen.x);
+    double y = g.pen.y + normal_offset;
+    double c = cos(pt.angle), s = sin(pt.angle);
+    // Offset by y along the path's local normal (a 90 degree ccw turn of
+    // the tangent), same as rotating (0,y) by the tangent angle.
+    g.pen.x = pt.point.x - s*y;
+    g.pen.y = pt.point.y + c*y;
+    g.angle = pt.angle;
+  }
+}

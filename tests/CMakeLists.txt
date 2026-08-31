@@ -12,6 +12,7 @@ add_executable(pomelolib_unit_tests
   unit/test_utils.cc
   unit/test_material.cc
   unit/test_profile.cc
+  unit/test_svg_path_flatten.cc
 )
 target_link_libraries(pomelolib_unit_tests PRIVATE engine doctest::doctest_with_main)
 

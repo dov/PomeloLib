@@ -688,6 +688,24 @@ glm::dvec3 Font3D::mesh_translation(const PlacedGlyph& placed) const
   return g ? placed.pen + g->offset : placed.pen;
 }
 
+namespace {
+
+// Rotation about z by angle radians; z passes through unchanged.
+glm::dvec3 rotate_z(double angle, const glm::dvec3& v)
+{
+  double c = cos(angle), s = sin(angle);
+  return { c*v.x - s*v.y, s*v.x + c*v.y, v.z };
+}
+
+} // anonymous namespace
+
+Font3D::GlyphPlacement Font3D::mesh_placement(const PlacedGlyph& placed) const
+{
+  const Glyph3D *g = find(placed.glyph_id);
+  glm::dvec3 offset = g ? g->offset : glm::dvec3{0,0,0};
+  return { placed.angle, rotate_z(placed.angle, offset) + placed.pen };
+}
+
 MultiMesh instantiate(const Font3D& font,
                       const vector<PlacedGlyph>& placements)
 {
@@ -704,7 +722,7 @@ MultiMesh instantiate(const Font3D& font,
     const Glyph3D *g = font.find(p.glyph_id);
     if (!g || !g->has_geometry())
       continue;
-    glm::dvec3 t = font.mesh_translation(p);
+    Font3D::GlyphPlacement placement = font.mesh_placement(p);
     for (size_t i=0; i<g->layers.size(); i++)
     {
       out[i].color = g->layers[i].color;
@@ -712,7 +730,7 @@ MultiMesh instantiate(const Font3D& font,
       auto& dst = out[i].vertices;
       dst.reserve(dst.size()+src.size());
       for (const auto& v : src)
-        dst.push_back(v + t);
+        dst.push_back(rotate_z(placement.angle, v) + placement.translation);
     }
   }
   return out;
@@ -946,12 +964,16 @@ void Font3D::save_layout_glb(const vector<PlacedGlyph>& placements,
     if (it == mesh_of_glyph.end())
       continue;   // no outline, e.g. a space
 
-    glm::dvec3 t = mesh_translation(p);
+    GlyphPlacement placement = mesh_placement(p);
 
     tinygltf::Node node;
     node.mesh = it->second;
     node.name = model.meshes[it->second].name;
-    node.translation = { t.x, t.y, t.z };
+    node.translation = { placement.translation.x, placement.translation.y,
+                         placement.translation.z };
+    if (placement.angle != 0)
+      // [x,y,z,w], rotation about z - see make_zup_root() above.
+      node.rotation = { 0.0, 0.0, sin(placement.angle/2), cos(placement.angle/2) };
 
     // Keep the tie back to the source string so that a host application
     // can map a node to the character the user typed.

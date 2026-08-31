@@ -20,6 +20,7 @@
 
 #include "font3d.h"
 #include "font3d-layout.h"
+#include "svg-path-flatten.h"
 #include "mesh.h"
 #include "utils.h"
 
@@ -37,6 +38,23 @@ static void die(fmt::format_string<Args...> FormatStr, Args &&... args)
 
 #define CASE(s) if (s == S_)
 #define CASE2(s,s1) if (s == S_ || s1 == S_)
+
+// Splits "r" or "r,start_deg,end_deg" for --path-arc.
+static vector<double> parse_comma_numbers(const string& s)
+{
+  vector<double> out;
+  size_t start = 0;
+  while (start <= s.size())
+  {
+    size_t comma = s.find(',', start);
+    string field = s.substr(start, comma - start);
+    out.push_back(atof(field.c_str()));
+    if (comma == string::npos)
+      break;
+    start = comma + 1;
+  }
+  return out;
+}
 
 static void usage()
 {
@@ -65,6 +83,18 @@ static void usage()
     "   --allow-font-mismatch  Warn instead of failing on a sha256 mismatch\n"
     "   --verbose              Log progress\n"
     "  -o, --output file       Output .glb or .stl\n"
+    "\n"
+    "Path options - bend the laid out text onto a curve, svg textPath\n"
+    "style (rotate and translate each glyph; the glyph itself is not\n"
+    "distorted). At most one of --path-svg, --path or --path-arc.\n"
+    "   --path-svg file.svg    Use a path from an svg file\n"
+    "   --path-index n         Which path in the file, in document order\n"
+    "                          (default 0, the first)\n"
+    "   --path d               A literal svg path 'd' expression\n"
+    "   --path-arc r[,s,e]     A circular arc of radius r from s to e\n"
+    "                          degrees (default 0,360 - a full ring)\n"
+    "   --path-offset v        Shift the text along the path's normal,\n"
+    "                          e.g. to sit it above or below the path\n"
     );
 }
 
@@ -82,6 +112,13 @@ int main(int argc, char **argv)
   bool allow_mismatch = false;
   bool verbose = false;
   LayoutOptions options;
+
+  string path_svg_filename;
+  int path_index = 0;
+  string path_d;
+  bool path_arc_given = false;
+  double path_arc_radius = 0, path_arc_start = 0, path_arc_end = 360;
+  double path_offset = 0;
 
   while (argp < argc)
   {
@@ -125,6 +162,21 @@ int main(int argc, char **argv)
     CASE("--allow-font-mismatch") { allow_mismatch = true; continue; }
     CASE("--verbose") { verbose = true; continue; }
     CASE2("-o", "--output") { output_filename = argv[argp++]; continue; }
+    CASE("--path-svg") { path_svg_filename = argv[argp++]; continue; }
+    CASE("--path-index") { path_index = atoi(argv[argp++]); continue; }
+    CASE("--path") { path_d = argv[argp++]; continue; }
+    CASE("--path-arc")
+    {
+      vector<double> v = parse_comma_numbers(argv[argp++]);
+      if (v.empty())
+        die("--path-arc expects r[,start_deg,end_deg]");
+      path_arc_radius = v[0];
+      if (v.size() > 1) path_arc_start = v[1];
+      if (v.size() > 2) path_arc_end = v[2];
+      path_arc_given = true;
+      continue;
+    }
+    CASE("--path-offset") { path_offset = atof(argv[argp++]); continue; }
 
     die("Unknown option {}!", S_);
   }
@@ -140,6 +192,10 @@ int main(int argc, char **argv)
     die("No face given. Use --font face.ttf");
   if (output_filename.empty())
     die("No output file given. Use -o out.glb");
+  if ((!path_svg_filename.empty()) + (!path_d.empty()) + path_arc_given > 1)
+    die("--path-svg, --path and --path-arc are mutually exclusive");
+  if (path_index != 0 && path_svg_filename.empty())
+    die("--path-index only makes sense with --path-svg");
 
   if (!text_file.empty())
   {
@@ -170,6 +226,25 @@ int main(int argc, char **argv)
 
     Font3DLayout engine(font, font_filename, !allow_mismatch);
     LayoutResult result = engine.layout(text, options);
+
+    if (!path_svg_filename.empty() || !path_d.empty() || path_arc_given)
+    {
+      FlattenedPath path = !path_svg_filename.empty()
+        ? FlattenedPath::from_svg_file(path_svg_filename, path_index)
+        : !path_d.empty()
+        ? FlattenedPath::from_svg_d(path_d)
+        : FlattenedPath::circular_arc({0,0}, path_arc_radius,
+                                      path_arc_start, path_arc_end);
+
+      double text_width = result.max.x - result.min.x;
+      if (text_width > path.length())
+        fmt::print(stderr,
+                   "Warning: the text is {:.2f} units wide but the path is\n"
+                   "         only {:.2f} long; it will pile up at the end.\n",
+                   text_width, path.length());
+
+      bend_onto_path(result.glyphs, path, path_offset);
+    }
 
     fmt::print("Laid out {} glyphs on {} line(s), advance box {:.2f} x {:.2f}\n",
                result.glyphs.size(),
