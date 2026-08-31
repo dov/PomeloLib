@@ -72,19 +72,28 @@ add_library(tinygltf INTERFACE)
 target_include_directories(tinygltf INTERFACE ${tinygltf_SOURCE_DIR})
 
 # System libraries, discovered via pkg-config.
+#
+# harfbuzz/fribidi/glib are all the lightweight layout engine needs to shape
+# and bidi-order text; glibmm/pangomm/cairo and CGAL/GMP/MPFR are only
+# needed by the CGAL-based 3D baking engine (extrusion, offsetting, mesh
+# construction), so they're gated behind POMELOLIB_BUILD_BAKING to let
+# consumers that only need text layout skip that dependency stack.
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(GLIBMM REQUIRED IMPORTED_TARGET glibmm-2.4)
-pkg_check_modules(PANGOMM REQUIRED IMPORTED_TARGET pangomm-1.4)
-pkg_check_modules(PANGOFT2 REQUIRED IMPORTED_TARGET pangoft2)
-pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
-pkg_check_modules(CAIROFT REQUIRED IMPORTED_TARGET cairo-ft)
 pkg_check_modules(HARFBUZZ REQUIRED IMPORTED_TARGET harfbuzz)
 pkg_check_modules(FRIBIDI REQUIRED IMPORTED_TARGET fribidi)
 pkg_check_modules(GLIB REQUIRED IMPORTED_TARGET glib-2.0)
 
-find_package(Freetype REQUIRED)
-find_package(CGAL REQUIRED)
-find_package(Threads REQUIRED)
+if(POMELOLIB_BUILD_BAKING)
+  pkg_check_modules(GLIBMM REQUIRED IMPORTED_TARGET glibmm-2.4)
+  pkg_check_modules(PANGOMM REQUIRED IMPORTED_TARGET pangomm-1.4)
+  pkg_check_modules(PANGOFT2 REQUIRED IMPORTED_TARGET pangoft2)
+  pkg_check_modules(CAIRO REQUIRED IMPORTED_TARGET cairo)
+  pkg_check_modules(CAIROFT REQUIRED IMPORTED_TARGET cairo-ft)
 
-find_library(GMP_LIBRARY gmp REQUIRED)
-find_library(MPFR_LIBRARY mpfr REQUIRED)
+  find_package(Freetype REQUIRED)
+  find_package(CGAL REQUIRED)
+  find_package(Threads REQUIRED)
+
+  find_library(GMP_LIBRARY gmp REQUIRED)
+  find_library(MPFR_LIBRARY mpfr REQUIRED)
+endif()

@@ -27,6 +27,12 @@ if(PROJECT_IS_TOP_LEVEL)
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 endif()
 
+option(POMELOLIB_BUILD_BAKING
+  "Build the CGAL-based 3D font baking engine and its CLI tools \
+(pomelo-build-3d-font, pomelo-cli). Requires CGAL/GMP/MPFR/cairo/pango. \
+When OFF, only the lightweight text-layout library and \
+pomelo-layout-3d-text/pomelo-layout-server are built." ON)
+
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(cmake/Version.cmake)

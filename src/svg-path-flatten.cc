@@ -10,6 +10,7 @@
 
 #include <fmt/core.h>
 #include <glm/geometric.hpp>
+#define NANOSVG_IMPLEMENTATION	// Expands implementation
 #include "nanosvg.h"
 
 using namespace std;

@@ -1,6 +1,9 @@
 // Uses nanosvg to add the svg paths from an svg file to
 // a cairo context.
-#define NANOSVG_IMPLEMENTATION	// Expands implementation
+//
+// The nanosvg implementation itself lives in svg-path-flatten.cc (in the
+// layout library, which this always links against), so it's not defined
+// here again.
 #include <stdio.h>
 #include "nanosvg.h"
 #include "cairo/cairo.h"
